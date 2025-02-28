@@ -1,0 +1,58 @@
+import pandas as pd
+import os
+import requests
+
+
+# Import the two files
+#file1 consists of patient and tumor details
+#file2 is gene expression file
+
+#This file path should be according to the local path download 
+file_path1 = r"C:\Users\maeve\Downloads\IvyTumorInfomation.csv"
+file1 = pd.read_csv(file_path1)
+
+print(file1.head())
+
+#This file path should be according to the local path download 
+file_path2 = r"C:\Users\maeve\Downloads\ExpressionTest.csv"
+file2 = pd.read_csv(file_path2)
+
+print(file2.head())
+
+
+# Transpose the rows of file2 into columns
+file2_transposed = file2.transpose()
+
+# Reset the index to make the transposed data easier to work with
+file2_transposed.reset_index(inplace=True)
+
+# Rename the columns to reflect the transposition
+file2_transposed.columns = ['Gene'] + [f'Sample_{i}' for i in range(1, len(file2_transposed.columns))]
+
+# Display the transposed dataframe
+print("\nTransposed file2:")
+print(file2_transposed)
+
+# Create new dataframe with selected columns from file1
+columns_to_select_file1 = ['donor_id', 'donor_name', 'donor_color', 'sample_well', 'sample_polygon', 'sample_mri_0', 'sample_mri_1', 'sample_mri_2', 'structure_id', 'structure_name', 'structure_abbreviation', 'structure_color', 'top_level_structure_id', 'top_level_structure_abbreviation', 'top_level_structure_color', 'tumor_name', 'molecular_subtype', 'extent_of_resection', 
+    'surgery', 'mgmt_methylation', 'survival_days', 'egfr_amplification', 
+    'initial_kps', 'age_in_years'] # These are the columns I want to select from file1
+
+file1_selected = file1[columns_to_select_file1]  # This correctly selects multiple columns
+
+# Merge the selected columns from file1 with the transposed file2
+new_df = pd.concat([file1_selected, file2_transposed], axis=1)
+
+# Save the new file
+new_df.to_csv('new_file.csv', index=False)
+
+# Print the contents of the new CSV file
+print("\nContents of new_file.csv:")
+print(new_df)
+
+# Open and read the new CSV file
+new_file_df = pd.read_csv('new_file.csv')
+print("\nContents of the opened new_file.csv:")
+print(new_file_df)
+
+

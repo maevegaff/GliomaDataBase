@@ -1,0 +1,69 @@
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy.stats import ttest_ind
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+import scanpy as sc  # Useful for single-cell RNA-seq analysis
+
+
+df = pd.read_csv("new_file.csv", index_col=0)
+df.head()
+
+
+print(df.shape)  # Rows = genes, Columns = samples
+print(df.describe())  # Summary statistics
+
+
+# Assign groups (Example: First 10 samples = tumor, last 10 = normal)
+ group_labels = ['tumor'] * 10 + ['normal'] * 10
+ df['group'] = group_labels  # Add column
+
+# Perform t-test for each gene
+p_values = []
+for gene in df.index:
+    tumor_expr = df.loc[gene, df['group'] == 'tumor']
+    normal_expr = df.loc[gene, df['group'] == 'normal']
+    t_stat, p_val = ttest_ind(tumor_expr, normal_expr, equal_var=False)  # Welch’s T-test
+    p_values.append(p_val)
+
+df['p_value'] = p_values
+
+# Adjust for multiple testing using Benjamini-Hochberg (False Discovery Rate)
+df['adjusted_p'] = sm.stats.multipletests(df['p_value'], method='fdr_bh')[1]
+
+# Select significantly differentially expressed genes (e.g., p < 0.05)
+significant_genes = df[df['adjusted_p'] < 0.05]
+print(significant_genes)
+
+
+
+import gseapy as gp
+
+# Run GSEA using MSigDB gene sets
+gsea_results = gp.gsea(
+    data=df.drop(columns=['group', 'p_value', 'adjusted_p']),
+    gene_sets='KEGG_2016',
+    cls=group_labels,
+    permutation_num=1000,  # Number of permutations
+    method='signal_to_noise'
+)
+
+gsea_results.res2d  # View results
+
+
+df['log2FC'] = np.log2(df['tumor'].mean() / df['normal'].mean())  # Log Fold Change
+sns.scatterplot(x=df['log2FC'], y=-np.log10(df['adjusted_p']), hue=df['adjusted_p'] < 0.05)
+plt.axhline(-np.log10(0.05), color='red', linestyle='--')  # Significance threshold
+plt.xlabel('Log2 Fold Change')
+plt.ylabel('-Log10 Adjusted p-value')
+plt.title('Volcano Plot')
+plt.show()
+
+
+adata = sc.read_csv("ivygap_singlecell.csv")  # Load single-cell data
+sc.pp.normalize_total(adata, target_sum=1e4)  # Normalize counts
+sc.pp.log1p(adata)  # Log-transform data
+sc.tl.pca(adata)  # Perform PCA
+sc.pl.pca_variance_ratio(adata, log=True)
