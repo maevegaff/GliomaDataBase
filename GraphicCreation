@@ -1,0 +1,17 @@
+
+#Importing combine master- gene expression file 
+df = pd.read_csv("new_file.csv", index_col=0)
+df.head()
+
+
+print(df.shape)  # Rows = genes, Columns = samples
+print(df.describe())  # Summary statistics
+
+
+# Create box plots for each column variable
+for column in df.columns:
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(y=df[column])
+    plt.title(f'Box plot of {column}')
+    plt.ylabel(column)
+    plt.show()
