@@ -9,6 +9,9 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf
 import scanpy as sc  # Useful for single-cell RNA-seq analysis
 import scipy.stats as stats
+from scipy.stats import shapiro
+from scipy.stats import kruskal
+import scikit_posthocs as sp
 
 
 # Load the data
@@ -19,6 +22,10 @@ print(data.head())
 
 print(data.describe())  # Summary statistics
 
+# Save the summary statistics to a CSV file
+summary_stats = data.describe()
+summary_stats.to_csv('SumStat.csv')
+
 # Define the model
 model = ols('Gene ~ C(structure_color)', data=data).fit()
 
@@ -27,3 +34,22 @@ anova_table = sm.stats.anova_lm(model, typ=2)
 
 # Print the results
 print(anova_table)
+
+# Save the ANOVA results to a CSV file
+anova_table.to_csv('ANOVAResults.csv')
+
+# Shapiro-Wilk Test
+stat, p = shapiro(data['Gene'])  # Replace 'expression' with actual column
+print(f"Shapiro-Wilk Test: p-value = {p}")
+
+
+# Run Kruskal-Wallis Test
+stat, p = kruskal(*[data[data['structure_color'] == region]['Gene'] for region in data['structure_color'].unique()])
+print(f"Kruskal-Wallis Test: p = {p}")
+
+# If significant, run Dunn’s test
+dunn = sp.posthoc_dunn(data, val_col='Gene', group_col='structure_color', p_adjust='bonferroni')
+print(dunn)
+
+# Save the results to a CSV file
+dunn.to_csv('DunnResults.csv')
