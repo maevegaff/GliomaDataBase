@@ -1,0 +1,29 @@
+import pandas as pd
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy.stats import ttest_ind
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+import scanpy as sc  # Useful for single-cell RNA-seq analysis
+import scipy.stats as stats
+
+
+# Load the data
+data = pd.read_csv('new_file.csv')
+
+# Print the data
+print(data.head())
+
+print(data.describe())  # Summary statistics
+
+# Define the model
+model = ols('Gene ~ C(structure_color)', data=data).fit()
+
+# Perform ANOVA
+anova_table = sm.stats.anova_lm(model, typ=2)
+
+# Print the results
+print(anova_table)
