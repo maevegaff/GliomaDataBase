@@ -1,0 +1,117 @@
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy.stats import ttest_ind
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+import scanpy as sc  # Useful for single-cell RNA-seq analysis
+import scipy.stats as stats
+from statsmodels.formula.api import ols
+
+#Importing combine master- gene expression file 
+#df = pd.read_csv("new_file.csv", index_col=0)
+#df.head()
+
+
+
+
+#print(df.shape)  # Rows = genes, Columns = samples
+#print(df.describe())  # Summary statistics
+
+
+
+# Compare  tumour region expression levels
+
+# Load data (Assumes df has columns: 'gene', 'structure_name', 'expression')
+# tumor_regions = ['218FA5', 'D104D0', '05D004', '43D1F8', '05D0AA', 'FF6600', 'FF3300']
+# df = df[df['structure_color'].isin(tumor_regions)]  # Filter relevant tumor regions
+
+# Dictionary to store ANOVA results
+#anova_results = {}
+
+# print(df.columns)  # Check available columns
+
+#gene = "Gene"  # Replace with actual column name
+#print(f"Gene variable: {gene}")  # Now it should print without error
+
+
+#print(f"Gene variable: {gene}")
+#print(df[gene].shape)  # This should be (270,) not (270, 80)
+
+
+
+# Loop through each gene (assuming first two columns are 'gene' and 'structure_name')
+#for gene in df[2:]:
+    #model = ols(f"{gene} ~ C(structure_color)", data=df).fit()
+    # Define the ANOVA model: Expression as a function of Tumor Region
+    #model = ols(f"{gene} ~ C(structure_color)", data=df).fit()
+    
+    # Perform ANOVA
+    #anova_table = sm.stats.anova_lm(model, typ=2)
+    
+    # Store the p-value from the ANOVA table
+    #anova_results[gene] = anova_table["PR(>F)"][0]
+
+# Convert results into a DataFrame
+#anova_df = pd.DataFrame(list(anova_results.items()), columns=['Gene', 'p_value'])
+
+# Print first few results
+#print(anova_df.head())
+
+
+    
+# Apply multiple testing correction (FDR)
+#from statsmodels.stats.multitest import multipletests
+#anova_df['adjusted_p'] = multipletests(anova_df['p_value'], method='fdr_bh')[1]
+
+# Filter significant genes (adjusted p < 0.05)
+#significant_genes = anova_df[anova_df['adjusted_p'] < 0.05]
+#print(significant_genes)
+
+
+
+
+# Assign groups based on tumour regions
+#tumor_regions = ['218FA5', 'D104D0', '05D004', '43D1F8', '05D0AA', 'FF6600', 'FF3300']
+#grouped_data = {region: df[df['structure_name'] == region] for region in tumor_regions}
+
+#p_values = []
+#for gene in df.index:
+    #t_stat, p_val = ttest_ind(group_1[gene], group_2[gene], equal_var=False)
+    #p_values.append(p_val)
+
+#df['p_value'] = p_values
+
+
+
+# Assign groups (Example: First 10 samples = tumor, last 10 = normal)
+#group_labels = ['tumor'] * 10 + ['normal'] * 10
+#df['group'] = group_labels  # Add column
+
+# Perform t-test for each gene
+#p_values = []
+#for gene in df.index:
+   # tumor_expr = df.loc[gene, df['group'] == 'tumor']
+   # normal_expr = df.loc[gene, df['group'] == 'normal']
+   # t_stat, p_val = ttest_ind(tumor_expr, normal_expr, equal_var=False)  # Welch’s T-test
+   # p_values.append(p_val)
+
+#df['p_value'] = p_values
+
+# Adjust for multiple testing using Benjamini-Hochberg (False Discovery Rate)
+#df['adjusted_p'] = sm.stats.multipletests(df['p_value'], method='fdr_bh')[1]
+
+# Select significantly differentially expressed genes (e.g., p < 0.05)
+#significant_genes = df[df['adjusted_p'] < 0.05]
+#print(significant_genes)
+
+
+#df['log2FC'] = np.log2(df['tumor'].mean() / df['normal'].mean())  # Log Fold Change
+#sns.scatterplot(x=df['log2FC'], y=-np.log10(df['adjusted_p']), hue=df['adjusted_p'] < 0.05)
+#plt.axhline(-np.log10(0.05), color='red', linestyle='--')  # Significance threshold
+#plt.xlabel('Log2 Fold Change')
+#plt.ylabel('-Log10 Adjusted p-value')
+#plt.title('Volcano Plot')
+#plt.show()
+

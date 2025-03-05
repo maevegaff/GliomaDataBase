@@ -14,7 +14,7 @@ file1 = pd.read_csv(file_path1)
 print(file1.head())
 
 #This file path should be according to the local path download 
-file_path2 = r"C:\Users\maeve\Downloads\ExpressionTest.csv"
+file_path2 = r"C:\Users\maeve\Downloads\Expression5HT1A.csv"
 file2 = pd.read_csv(file_path2)
 
 print(file2.head())
@@ -31,6 +31,11 @@ file2_transposed.reset_index(inplace=True)
 # Rename the columns to reflect the transposition
 file2_transposed.columns = ['Gene'] + [f'Sample_{i}' for i in range(1, len(file2_transposed.columns))]
 
+# Ensure gene expression values are treated as floats
+for col in file2_transposed.columns[1:]:
+    file2_transposed[col] = file2_transposed[col].astype(float)
+
+
 # Display the transposed dataframe
 print("\nTransposed file2:")
 print(file2_transposed)
@@ -45,8 +50,12 @@ file1_selected = file1[columns_to_select_file1]  # This correctly selects multip
 # Merge the selected columns from file1 with the transposed file2
 new_df = pd.concat([file1_selected, file2_transposed], axis=1)
 
+new_df['Gene'] = new_df['Gene'].apply(lambda x: '0' if x.count('.') == 2 else x)
+
 # Save the new file
-new_df.to_csv('new_file.csv', index=False)
+new_df.to_csv('new_file.csv', index=False, float_format='%.4f')
+
+
 
 # Print the contents of the new CSV file
 print("\nContents of new_file.csv:")
