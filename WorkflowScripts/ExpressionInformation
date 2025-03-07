@@ -14,7 +14,7 @@ file1 = pd.read_csv(file_path1)
 print(file1.head())
 
 #This file path should be according to the local path download 
-file_path2 = r"C:\Users\maeve\Downloads\Expression5HT1A.csv"
+file_path2 = r"C:\Users\maeve\Downloads\Expression5HT3A.csv"
 file2 = pd.read_csv(file_path2)
 
 print(file2.head())
