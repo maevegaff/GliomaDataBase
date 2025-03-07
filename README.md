@@ -1,7 +1,7 @@
 # GliomaDataBase
-This Repo is a Tool set to analysis the IvyGap Giloma Data Base 
+This Repo is a Tool set to analyse the IvyGap Giloma Database 
 
-Reveiw of Repo Components
+Review of Repo Components
 
 RegionExpressionBoxPlots
 
@@ -17,12 +17,9 @@ DunnResults.csv- This File is assigned the Dunnes results from StatsAnalysis Scr
 SumStat.csv-This File is assigned the Summary Statistics results from StatsAnalysis Script
 
 Scripts
-ExpressionInformation- This File is used to Format the expression information of the gene or genes desired to be analysised and combined it with the Patient and tumor Sample Information; the user is require to download and edit path infomation to suit local computer 
-StatAnalysis- This File Runs summary Statistics, ANOVA, Shapiro Wilk, Kruskal-Wallis, and Dunns Post Hoc Tests on the values from file composed from new_file.csv
+ExpressionInformation- This File is used to Format the expression information of the gene or genes desired to be analysised and combine it with the Patient and tumor Sample Information; the user is require to download and edit path infomation to suit local computer 
+StatAnalysis- This File Runs summary Statistics, ANOVA, Shapiro-Wilk, Kruskal-Wallis, and Dunns Post Hoc Tests on the values from file composed from new_file.csv
 BoxplotTrial- This File Runs Using ExpressionInformation and StatAnalysis scripts to create summary Box Plots Representative of expression in various tumour regions; Labels may need to be edited 
 
 
-To use this tool you must download this file and edit the path according to the computer being used 
-
-
-        
+To use this tool, you must download this file and edit the path according to the computer being used 
