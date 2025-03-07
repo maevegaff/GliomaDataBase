@@ -1,0 +1,15 @@
+<tool id="my_tool" name="My Tool" version="1.0">
+    <description>A short description of my tool</description>
+    <command>
+        my_script.py --input '${input_file}' --output '${output_file}'
+    </command>
+    <inputs>
+        <param name="input_file" type="data" format="txt"/>
+    </inputs>
+    <outputs>
+        <data name="output_file" format="txt"/>
+    </outputs>
+    <requirements>
+        <requirement type="package">python</requirement>
+    </requirements>
+</tool>
