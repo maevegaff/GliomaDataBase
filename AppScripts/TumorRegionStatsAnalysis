@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import ttest_ind
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
+import scanpy as sc  # Useful for single-cell RNA-seq analysis
 import scipy.stats as stats
 from scipy.stats import shapiro
 from scipy.stats import kruskal
