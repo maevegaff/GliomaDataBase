@@ -5,7 +5,7 @@ Review of Repo Components
 
 User Interface tools and Explaination 
 
-The User Interface tools (found in the AppScripts folder of this Repo) were created to make statistical analysis of IvyGap data more efficient and User Friendly
+The User Interface tools (found in the AppScripts folder in the GalaxyToolBranch of this Repo) were created to make statistical analysis of IvyGap data more efficient and User Friendly
 Each Script runs statistical anyalysis of the Gene Expression of a provided Gene and the name sake varible of the script, Tumour Region, Molecular Subtype, or Survival Time.
 
 If you are a first time user follow there steps to use this interface locally 
