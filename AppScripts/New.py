@@ -48,7 +48,24 @@ if uploaded_file1 and uploaded_file2:
     # Remove rows without numeric survival days
     merged_df = merged_df[pd.to_numeric(merged_df['survival_days'], errors='coerce').notnull()]
 
-    # Add event column (assuming all patients had the event)
+    # Filter rows where structure_color is not equal to '05D004'
+    merged_df = merged_df[merged_df['structure_color'] == '05D004']
+
+    # Ensure Gene column is numeric
+    merged_df['Gene'] = pd.to_numeric(merged_df['Gene'], errors='coerce')
+
+    # Calculate median gene expression for each donor_id using vectorized operations
+    median_expression_per_donor = merged_df.groupby('donor_id')['Gene'].median().reset_index()
+    median_expression_per_donor.columns = ['donor_id', 'Median_Gene_Expression']
+
+    # Merge median expression back into the main dataframe
+    merged_df = pd.merge(merged_df, median_expression_per_donor, on='donor_id', how='left')
+
+    # Update Gene column with median expression for each donor_id
+    merged_df['Gene'] = merged_df['Median_Gene_Expression']
+
+    # Add event column
+    # Assumption: All patients had the event (e.g., death) for the purpose of this analysis.
     merged_df['event'] = 1  
 
     # Ensure Gene column is numeric
@@ -120,8 +137,6 @@ if uploaded_file1 and uploaded_file2:
         file_name="Survival_Plot.png",
         mime="image/png"
     )
-
-
 
     # Display statistics for each gene
     st.write("### 📊 Gene Expression Statistics")

@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import os
@@ -43,7 +42,7 @@ def process_files(file1_path, file2_path):
     
     return processed_file, merged_df
 
-# Function to generate and save boxplot with significance markers
+# Function to generate and save boxplot with summary statistics
 def generate_boxplot(data):
     plt.figure(figsize=(10, 6))
     ax = sns.boxplot(x="structure_color", y="Gene", data=data, palette="Set2")
@@ -67,7 +66,6 @@ def generate_boxplot(data):
     
     # Change x-axis labels
     ax.set_xticklabels([color_to_label.get(label, label) for label in regions])
-
 
     # Replace structure_color codes with readable names
     data['Region'] = data['structure_color'].map(color_to_label).fillna(data['structure_color'])
@@ -98,18 +96,46 @@ def generate_boxplot(data):
     
     return plot_filename
 
+# Function to display summary statistics per tumor region
+def display_summary_statistics(data):
+    # Convert 'Gene' column to numeric (handling non-numeric values)
+    data["Gene"] = pd.to_numeric(data["Gene"], errors="coerce")
+
+    # Drop rows where 'Gene' is NaN
+    data = data.dropna(subset=["Gene"])
+
+    # Compute summary statistics per tumor region
+    summary_stats = data.groupby("structure_color")["Gene"].agg(
+        count="count",
+        mean="mean",
+        std="std",
+        min="min",
+        q25=lambda x: x.quantile(0.25),
+        median="median",
+        q75=lambda x: x.quantile(0.75),
+        max="max"
+    )
+
+    # Compute IQR (Interquartile Range)
+    summary_stats["IQR"] = summary_stats["q75"] - summary_stats["q25"]
+
+    # Rename columns for clarity
+    summary_stats = summary_stats.rename(columns={"q25": "25%", "q75": "75%", "median": "Median", "std": "Std Dev"})
+
+    st.write("### 📊 Tumor Region Summary Statistics")
+    st.dataframe(summary_stats)
+
+    # Download button for summary statistics
+    summary_stats_csv = summary_stats.to_csv().encode('utf-8')
+    st.download_button(
+        label="📥 Download Summary Statistics",
+        data=summary_stats_csv,
+        file_name="TumorRegion_Summary_Statistics.csv",
+        mime="text/csv"
+    )
+
 # Streamlit UI
 st.title('🧬 Tumor Region Expression Analysis')
-st.markdown("""
-The app will:
-- Merge the datasets
-- Provide summary statistics of the data.
-- Perform ANOVA and display the results.
-- Conduct Shapiro-Wilk and Kruskal-Wallis tests.
-- Perform Dunn's post hoc test if Kruskal-Wallis is significant.
-- Generate and display a boxplot of gene expression across tumor regions.
-""")
-
 
 # Upload files
 uploaded_file1 = st.file_uploader("📂 Upload IvyTumorInformation CSV", type="csv")
@@ -129,104 +155,15 @@ if uploaded_file1 and uploaded_file2:
     # Process files
     processed_file, data = process_files(file1_path, file2_path)
 
-    # Download button for processed data
     st.success("✅ Files merged successfully!")
-    st.download_button(
-        label="📥 Download Processed Data",
-        data=open(processed_file, "rb").read(),
-        file_name="ProcessedData.csv",
-        mime="text/csv"
-    )
 
     # Display preview
     st.write("### 🔍 Data Preview")
     st.dataframe(data.head())
 
-    # Ensure required columns exist
-    required_columns = ["structure_color", "Gene"]
-    if not all(col in data.columns for col in required_columns):
-        st.error(f"❌ CSV must contain: {required_columns}")
-        st.stop()
-
-    # Convert Gene column to numeric
-    try:
-        data["Gene"] = pd.to_numeric(data["Gene"], errors="coerce")
-    except ValueError:
-        st.error("❌ 'Gene' column must contain numeric values.")
-        st.stop()
-
-    # Summary statistics
-    summary_stats = data.describe()
-    st.write("### 📊 Summary Statistics")
-    st.dataframe(summary_stats)
-
-    # Save and download summary statistics
-    summary_stats_file = "SummaryStatistics.csv"
-    summary_stats.to_csv(summary_stats_file)
-    st.download_button(
-        label="📥 Download Summary Statistics",
-        data=open(summary_stats_file, "rb").read(),
-        file_name="SummaryStatistics.csv",
-        mime="text/csv"
-    )
-
-    # Perform ANOVA
-    model = ols("Gene ~ C(structure_color)", data=data).fit()
-    anova_table = sm.stats.anova_lm(model, typ=2)
-
-    st.write("### 📊 ANOVA Results")
-    st.dataframe(anova_table)
-
-    # Save and download ANOVA results
-    anova_results_file = "ANOVAResults.csv"
-    anova_table.to_csv(anova_results_file)
-    st.download_button(
-        label="📥 Download ANOVA Results",
-        data=open(anova_results_file, "rb").read(),
-        file_name="ANOVAResults.csv",
-        mime="text/csv"
-    )
-
-    # Shapiro-Wilk Test
-    stat, p_shapiro = shapiro(data["Gene"])
-    st.write(f"📊 **Shapiro-Wilk Test**: p-value = `{p_shapiro:.5f}`")
-
-    # Kruskal-Wallis Test
-    groups = [data[data["structure_color"] == region]["Gene"] for region in data["structure_color"].unique()]
-    stat, p_kruskal = kruskal(*groups)
-    st.write(f"📊 **Kruskal-Wallis Test**: p-value = `{p_kruskal:.5f}`")
-
-    # Dunn's Post Hoc Test (if Kruskal-Wallis is significant)
-    if p_kruskal < 0.05:
-        st.success("✅ The Kruskal-Wallis test is significant! Performing Dunn’s post hoc test...")
-        dunn_result = sp.posthoc_dunn(data, val_col="Gene", group_col="structure_color", p_adjust="bonferroni")
-
-        st.write("### 📊 Dunn’s Post Hoc Test Results")
-        st.dataframe(dunn_result)
-
-        # Save and download Dunn's test results
-        dunn_results_file = "DunnResults.csv"
-        dunn_result.to_csv(dunn_results_file)
-        st.download_button(
-            label="📥 Download Dunn's Test Results",
-            data=open(dunn_results_file, "rb").read(),
-            file_name="DunnResults.csv",
-            mime="text/csv"
-        )
-    else:
-        st.info("ℹ️ Kruskal-Wallis test is not significant. No post hoc test needed.")
+    # Display summary statistics
+    display_summary_statistics(data)
 
     # Generate and display boxplot
     st.write("### 📊 Gene Expression Boxplot")
     boxplot_file = generate_boxplot(data)
-
-    # Download button for boxplot
-    with open(boxplot_file, "rb") as f:
-        st.download_button(
-            label="📥 Download Boxplot",
-            data=f,
-            file_name="GeneExpressionBoxplot.png",
-            mime="image/png"
-        )
-
-

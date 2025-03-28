@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import os
@@ -22,8 +21,6 @@ def process_files(file1_path, file2_path):
 
     # Transpose file2
     file2_transposed = file2.transpose().reset_index()
-
-    # Rename columns
     file2_transposed.columns = ['Gene'] + [f'Sample_{i}' for i in range(1, len(file2_transposed.columns))]
 
     # Ensure numeric values
@@ -31,7 +28,7 @@ def process_files(file1_path, file2_path):
         file2_transposed[col] = pd.to_numeric(file2_transposed[col], errors='coerce')
 
     # Select specific columns from file1
-    columns_to_select = ['donor_id', 'donor_name', 'structure_color', 'tumor_name', 'molecular_subtype']
+    columns_to_select = ['donor_id', 'donor_name', 'molecular_subtype']
     file1_selected = file1[columns_to_select]
 
     # Merge files
@@ -46,50 +43,32 @@ def process_files(file1_path, file2_path):
 # Function to generate and save boxplot with significance markers
 def generate_boxplot(data):
     plt.figure(figsize=(10, 6))
-    ax = sns.boxplot(x="structure_color", y="Gene", data=data, palette="Set2")
-    
+    ax = sns.boxplot(x="molecular_subtype", y="Gene", data=data, palette="Set2")
+
     # Perform Dunn's post hoc test
-    dunn_result = sp.posthoc_dunn(data, val_col="Gene", group_col="structure_color", p_adjust="bonferroni")
+    dunn_result = sp.posthoc_dunn(data, val_col="Gene", group_col="molecular_subtype", p_adjust="bonferroni")
 
-    # Get unique tumor regions
-    regions = data["structure_color"].unique()
-    
-    # Define mapping from color codes to readable labels
-    color_to_label = {
-        '218FA5': 'Leading Edge',
-        'D104D0': 'Infiltrating Tumour',
-        '05D004': 'Cellular Tumor',
-        '43D1F8': 'Perinecrotic Zone',
-        '05D0AA': 'Pseudopalisading',
-        'FF6600': 'HP Blood Vessel',
-        'FF3300': 'MV Proliferation'
-    }
-    
-    # Change x-axis labels
-    ax.set_xticklabels([color_to_label.get(label, label) for label in regions])
+    # Get unique molecular subtypes
+    subtypes = data["molecular_subtype"].unique()
 
-
-    # Replace structure_color codes with readable names
-    data['Region'] = data['structure_color'].map(color_to_label).fillna(data['structure_color'])
-    
     # Define y-position for significance markers
     y_max = data["Gene"].max()  
     y_offset = (y_max - data["Gene"].min()) * 0.05  
     y_pos = y_max + y_offset  
 
-    # Iterate over all region pairs and annotate significance
-    for (i, j) in itertools.combinations(range(len(regions)), 2):
+    # Iterate over all subtype pairs and annotate significance
+    for (i, j) in itertools.combinations(range(len(subtypes)), 2):
         p_value = dunn_result.iloc[i, j]  
-        if p_value < 0.05:  # Significant
+        if p_value < 0.05:  # Significant difference
             x1, x2 = i, j  
             ax.plot([x1, x1, x2, x2], [y_pos, y_pos + y_offset, y_pos + y_offset, y_pos], color="black", linewidth=1)
             ax.text((x1 + x2) / 2, y_pos + y_offset * 1.2, "*", ha="center", va="bottom", fontsize=14, color="red")
             y_pos += y_offset * 1.5  
 
     plt.xticks(rotation=45)
-    plt.xlabel("Tumor Region")
+    plt.xlabel("Molecular Subtype")
     plt.ylabel("Gene Expression")
-    plt.title("Gene Expression Across Tumor Regions")
+    plt.title("Gene Expression Across Molecular Subtypes")
 
     # Save and display the plot
     plot_filename = "boxplot.png"
@@ -99,16 +78,19 @@ def generate_boxplot(data):
     return plot_filename
 
 # Streamlit UI
-st.title('🧬 Tumor Region Expression Analysis')
+st.title('🧬 Gene Expression Analysis by Molecular Subtype')
+
 st.markdown("""
 The app will:
-- Merge the datasets
+- Upload and merge the provided datasets.
 - Provide summary statistics of the data.
-- Perform ANOVA and display the results.
-- Conduct Shapiro-Wilk and Kruskal-Wallis tests.
-- Perform Dunn's post hoc test if Kruskal-Wallis is significant.
-- Generate and display a boxplot of gene expression across tumor regions.
+- Perform ANOVA to analyze the variance between groups.
+- Conduct Shapiro-Wilk and Kruskal-Wallis tests for normality and group differences.
+- Perform Dunn's post hoc test if the Kruskal-Wallis test is significant.
+- Generate and display a boxplot of gene expression across molecular subtypes.
 """)
+
+
 
 
 # Upload files
@@ -143,7 +125,7 @@ if uploaded_file1 and uploaded_file2:
     st.dataframe(data.head())
 
     # Ensure required columns exist
-    required_columns = ["structure_color", "Gene"]
+    required_columns = ["molecular_subtype", "Gene"]
     if not all(col in data.columns for col in required_columns):
         st.error(f"❌ CSV must contain: {required_columns}")
         st.stop()
@@ -171,7 +153,7 @@ if uploaded_file1 and uploaded_file2:
     )
 
     # Perform ANOVA
-    model = ols("Gene ~ C(structure_color)", data=data).fit()
+    model = ols("Gene ~ C(molecular_subtype)", data=data).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
 
     st.write("### 📊 ANOVA Results")
@@ -192,14 +174,14 @@ if uploaded_file1 and uploaded_file2:
     st.write(f"📊 **Shapiro-Wilk Test**: p-value = `{p_shapiro:.5f}`")
 
     # Kruskal-Wallis Test
-    groups = [data[data["structure_color"] == region]["Gene"] for region in data["structure_color"].unique()]
+    groups = [data[data["molecular_subtype"] == subtype]["Gene"] for subtype in data["molecular_subtype"].unique()]
     stat, p_kruskal = kruskal(*groups)
     st.write(f"📊 **Kruskal-Wallis Test**: p-value = `{p_kruskal:.5f}`")
 
     # Dunn's Post Hoc Test (if Kruskal-Wallis is significant)
     if p_kruskal < 0.05:
         st.success("✅ The Kruskal-Wallis test is significant! Performing Dunn’s post hoc test...")
-        dunn_result = sp.posthoc_dunn(data, val_col="Gene", group_col="structure_color", p_adjust="bonferroni")
+        dunn_result = sp.posthoc_dunn(data, val_col="Gene", group_col="molecular_subtype", p_adjust="bonferroni")
 
         st.write("### 📊 Dunn’s Post Hoc Test Results")
         st.dataframe(dunn_result)
@@ -228,5 +210,3 @@ if uploaded_file1 and uploaded_file2:
             file_name="GeneExpressionBoxplot.png",
             mime="image/png"
         )
-
-

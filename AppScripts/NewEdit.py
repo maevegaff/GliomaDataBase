@@ -11,7 +11,8 @@ st.title('🧬 Gene Expression & Survival Analysis')
 st.markdown("""
 The app will:
 - Merge the datasets.
-- Classify samples into **High** and **Low Expression** groups.
+- Filter for structure color **05D004**.
+- Average gene expression values for duplicate donor IDs.
 - Fit a **Cox Proportional Hazards Model**.
 - Plot **survival curves** for both groups.
 """)
@@ -25,14 +26,14 @@ if uploaded_file1 and uploaded_file2:
     file1 = pd.read_csv(uploaded_file1)
     file2 = pd.read_csv(uploaded_file2)
 
-    # Remove first column from file2 (assumed to be index-like)
+    # Remove first column from file2 (assuming it's an index column)
     file2 = file2.iloc[:, 1:]
 
     # Transpose file2
     file2_transposed = file2.transpose().reset_index()
     file2_transposed.columns = ['Gene'] + [f'Sample_{i}' for i in range(1, len(file2_transposed.columns))]
 
-    # Ensure numeric values
+    # Convert columns to numeric
     for col in file2_transposed.columns[1:]:
         file2_transposed[col] = pd.to_numeric(file2_transposed[col], errors='coerce')
 
@@ -45,14 +46,27 @@ if uploaded_file1 and uploaded_file2:
     # Merge datasets
     merged_df = pd.concat([file1[required_columns], file2_transposed], axis=1)
 
-    # Remove rows without numeric survival days
+    # Remove rows with non-numeric survival days
     merged_df = merged_df[pd.to_numeric(merged_df['survival_days'], errors='coerce').notnull()]
 
-    # Add event column (assuming all patients had the event)
-    merged_df['event'] = 1  
+    # Filter only rows where `structure_color == '05D004'`
+    merged_df = merged_df[merged_df['structure_color'] == '05D004']
 
-    # Ensure Gene column is numeric
+    # Convert 'Gene' column to numeric
     merged_df['Gene'] = pd.to_numeric(merged_df['Gene'], errors='coerce')
+
+    # Compute mean gene expression per donor_id
+    mean_expression_per_donor = merged_df.groupby('donor_id', as_index=False)['Gene'].mean()
+
+    # Merge mean expression back into the main dataframe
+    merged_df = merged_df.drop(columns=['Gene'])  # Drop the original column
+    merged_df = pd.merge(merged_df, mean_expression_per_donor, on='donor_id', how='left')
+
+    # Drop duplicate donor_id rows (keep only first occurrence)
+    merged_df = merged_df.drop_duplicates(subset=['donor_id'], keep='first')
+
+    # Add event column (assumption: all patients had the event)
+    merged_df['event'] = 1  
 
     # Compute median gene expression
     median_expression = merged_df['Gene'].median()
@@ -120,8 +134,6 @@ if uploaded_file1 and uploaded_file2:
         file_name="Survival_Plot.png",
         mime="image/png"
     )
-
-
 
     # Display statistics for each gene
     st.write("### 📊 Gene Expression Statistics")
